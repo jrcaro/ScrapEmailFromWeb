@@ -42,10 +42,9 @@ def get_driver(debug):
     chrome_options = Options()
     chrome_options.add_argument("--disable-gpu")
     chrome_options.add_argument("--log-level=1")
-    chrome_options.add_argument("--headless=new")
 
-    #if not debug:
-    #    chrome_options.add_argument("--headless=new")
+    if not debug:
+        chrome_options.add_argument("--headless=new")
 
     return webdriver.Chrome(service=service, options=chrome_options)
 
@@ -120,8 +119,7 @@ if __name__ == "__main__":
             except:
                 continue
     else:
-        #query = input('Que quieres buscar, payaso? ')
-        query = "estudios interiorismo madrid"
+        query = input('Que quieres buscar, payaso? ')
 
         try:
             print('Buscando en Google...')
