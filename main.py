@@ -7,6 +7,7 @@ import time
 from googlesearch import search
 import re
 from concurrent.futures import ProcessPoolExecutor, wait, TimeoutError, as_completed
+from multiprocessing import freeze_support
 import os
 from tqdm import tqdm
 from datetime import datetime
@@ -94,7 +95,8 @@ def scrape_web(url, debug = False, query = 'Debug'):
         finally:
             driver.close()
         
-        #print('{} -> {}'.format(url, email))
+        if DEBUG:
+            print('{} -> {}'.format(url, email))
         write_file('{}{}{}{}{}{}{}\n'.format(query, SEPARATOR, 
                                      date, SEPARATOR, 
                                      url, SEPARATOR, 
@@ -112,35 +114,39 @@ if __name__ == "__main__":
                                                              SEPARATOR, SEPARATOR), NAME_FILE)
         filter_list = FILTER_WORDS
 
+    query = input('Que quieres buscar, payaso? ')
+
+    try:
+        print('Buscando en Google...')
+        search_raw = [urls.url for urls in search(query, 
+                                                    num_results=MAX_SEARCH, 
+                                                    advanced=True,
+                                                    sleep_interval=5)]
+        search_filter = [i for i in search_raw if not any(i for j in filter_list if str(j) in i)]
+        urls_list = set(['https://' + x.split('/')[2] for x in search_filter])
+    except Exception as e:
+        print(e)
+        input()
+        sys.exit()
+
+    # Progress bar
+    LENGTH = len(urls_list)
+    pbar = tqdm(total=LENGTH, desc='Lo que te queda por esperar. Cada email 5$')
+
     if DEBUG:
-        for url in ['https://www.ipunto.es/', 'https://estepainteriorismo.com']:
+        for url in urls_list:
             try:
-                scrape_web(url, DEBUG)
+                scrape_web(url, DEBUG, query=query)
+                pbar.update(n=1)
             except:
                 continue
-    else:
-        query = input('Que quieres buscar, payaso? ')
-
-        try:
-            print('Buscando en Google...')
-            search_raw = [urls.url for urls in search(query, 
-                                                      num_results=MAX_SEARCH, 
-                                                      advanced=True,
-                                                      sleep_interval=5)]
-            search_filter = [i for i in search_raw if not any(i for j in filter_list if str(j) in i)]
-            urls_list = set(['https://' + x.split('/')[2] for x in search_filter])
-        except Exception as e:
-            print(e)
-            sys.exit()
-    
+    else:    
         # list to store the processes
         processList = []
 
-        # Progress bar
-        LENGTH = len(urls_list)
-        pbar = tqdm(total=LENGTH, desc='Lo que te queda por esperar. Cada email 5$')
-
         # initialize the mutiprocess interface
+        freeze_support()
+
         with ProcessPoolExecutor() as executor:
             for url in urls_list:
                 try:
