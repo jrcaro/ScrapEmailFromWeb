@@ -12,3 +12,6 @@
 *.vsix
 venv
 __*
+output/*
+build/*
+dist/*

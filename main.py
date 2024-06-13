@@ -17,7 +17,7 @@ import sys
 DEBUG = False
 SLEEP_TIME = 3
 SEPARATOR = ";"
-MAX_SEARCH = 300
+MAX_SEARCH = 350
 NAME_FILE = './/resultado.csv'
 PATTERN = re.compile("[\w]+[.]?[-]?[\w]+@[\w]+[.]?[-]?[\w]+\.[\w]{2,6}")
 FILTER_WORDS = ['paginasamarillas', 'nebrija', 'facebook', 'aq.upm', 'blog',
@@ -103,6 +103,7 @@ def scrape_web(url, debug = False, query = 'Debug'):
                                      email.lower()), NAME_FILE)
 
 if __name__ == "__main__":
+    freeze_support()
 
     if os.path.exists(NAME_FILE):
         with open(NAME_FILE, 'r+') as f:
@@ -131,7 +132,9 @@ if __name__ == "__main__":
 
     # Progress bar
     LENGTH = len(urls_list)
-    pbar = tqdm(total=LENGTH, desc='Lo que te queda por esperar. Cada email 5$')
+    pbar = tqdm(total=LENGTH,
+                desc='Lo que te queda por esperar. Cada email 5$',
+                colour='GREEN')
 
     if DEBUG:
         for url in urls_list:
@@ -145,8 +148,6 @@ if __name__ == "__main__":
         processList = []
 
         # initialize the mutiprocess interface
-        freeze_support()
-
         with ProcessPoolExecutor() as executor:
             for url in urls_list:
                 try:
