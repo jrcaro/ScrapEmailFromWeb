@@ -14,12 +14,15 @@ from datetime import datetime
 import logging
 import sys
 
+# Constants
 DEBUG = False
 SLEEP_TIME = 3
 SEPARATOR = ";"
-MAX_SEARCH = 350
+MAX_SEARCH = 300
 NAME_FILE = './/resultado.csv'
+# Regex pattern
 PATTERN = re.compile("[\w]+[.]?[-]?[\w]+@[\w]+[.]?[-]?[\w]+\.[\w]{2,6}")
+# Words to filter URLs
 FILTER_WORDS = ['paginasamarillas', 'nebrija', 'facebook', 'aq.upm', 'blog',
                'influyentescantabria', 'tienda', 'univers', 'houzz',
                'linkedin', 'infojobs','.edu', 'elconfidencial', 'comunidad.madrid',
@@ -34,6 +37,7 @@ FILTER_WORDS = ['paginasamarillas', 'nebrija', 'facebook', 'aq.upm', 'blog',
                'magazine', 'insenia', 'murciaplaza', 'muebles']
 
 def get_driver(debug):
+    # The log disable with the option headless=new is not working
     logging.getLogger('selenium').setLevel(logging.ERROR)
 
     service = Service(
@@ -57,13 +61,14 @@ def write_file(data, filename):
             return e
 
 def scrape_web(url, debug = False, query = 'Debug'):
-    #print(url)
+    # Get driver and sleep for full page load
     driver = get_driver(debug)
     driver.get(url)
     time.sleep(SLEEP_TIME)
     email = ''
     date = datetime.now()
 
+    # Seach for contact page and navigate to it
     try:
         conctact_link = driver.find_element(By.PARTIAL_LINK_TEXT, "ontact")
         driver.get(conctact_link.get_attribute("href"))
@@ -81,7 +86,7 @@ def scrape_web(url, debug = False, query = 'Debug'):
     
     if not email:
         time.sleep(SLEEP_TIME)
-        
+        # Search email in the page with mailto ready email or plain text with regex
         try:        
             elem = driver.find_element(By.XPATH, ".//a[contains(@href,'mailto:')]")
             email = elem.get_attribute("href").strip().lower()[7:].split('?')[0].replace('%20', '')
@@ -103,8 +108,11 @@ def scrape_web(url, debug = False, query = 'Debug'):
                                      email.lower()), NAME_FILE)
 
 if __name__ == "__main__":
+    # Enable multiprocessing in exe for Windows
     freeze_support()
 
+    # Create the outpur file and the header if not exist. If exist, read the URLs
+    # and sum the list to the filter words list to not duplicates
     if os.path.exists(NAME_FILE):
         with open(NAME_FILE, 'r+') as f:
             res_urls = [x.split(SEPARATOR)[2] for x in f.readlines()]
@@ -115,9 +123,11 @@ if __name__ == "__main__":
                                                              SEPARATOR, SEPARATOR), NAME_FILE)
         filter_list = FILTER_WORDS
 
+    # Query to search in Google
     query = input('Que quieres buscar, payaso? ')
 
     try:
+        # Google search and apply filters
         print('Buscando en Google...')
         search_raw = [urls.url for urls in search(query, 
                                                     num_results=MAX_SEARCH, 
@@ -127,7 +137,7 @@ if __name__ == "__main__":
         urls_list = set(['https://' + x.split('/')[2] for x in search_filter])
     except Exception as e:
         print(e)
-        input()
+        input('Ha habido un error. Pulsa alguna tecla para salir.')
         sys.exit()
 
     # Progress bar
@@ -136,6 +146,7 @@ if __name__ == "__main__":
                 desc='Lo que te queda por esperar. Cada email 5$',
                 colour='GREEN')
 
+    # If debug flag is active, process the information one by one
     if DEBUG:
         for url in urls_list:
             try:
