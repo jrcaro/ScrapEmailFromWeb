@@ -4,7 +4,6 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
 import time
-from googlesearch import search
 import re
 from concurrent.futures import ProcessPoolExecutor, wait, TimeoutError, as_completed
 from multiprocessing import freeze_support
@@ -13,15 +12,19 @@ from tqdm import tqdm
 from datetime import datetime
 import logging
 import sys
+import requests
 
 # Constants
+with open('cred.txt', 'r') as f:
+    API_KEY = f.readline()
 DEBUG = False
+SEARCH_ENGINE_ID = '95f8e9404c82049dc'
 SLEEP_TIME = 3
 SEPARATOR = ";"
-MAX_SEARCH = 300
+MAX_SEARCH = 90
 NAME_FILE = './/resultado.csv'
 # Regex pattern
-PATTERN = re.compile("[\w]+[.]?[-]?[\w]+@[\w]+[.]?[-]?[\w]+\.[\w]{2,6}")
+PATTERN = re.compile(r"[\w]+[.]?[-]?[\w]+@[\w]+[.]?[-]?[\w]+\.[\w]{2,6}")
 # Words to filter URLs
 FILTER_WORDS = ['paginasamarillas', 'nebrija', 'facebook', 'aq.upm', 'blog',
                'influyentescantabria', 'tienda', 'univers', 'houzz',
@@ -34,7 +37,11 @@ FILTER_WORDS = ['paginasamarillas', 'nebrija', 'facebook', 'aq.upm', 'blog',
                'foro', 'kavehome', 'elmundo', 'elpais', 'udit.es', 'lanocion.es',
                'hola.com', 'college', 'provincia', 'artediez.es', 'empresa',
                'timeout', 'uam.es', 'wikipedia', 'castellonplaza', 'logicalia.net',
-               'magazine', 'insenia', 'murciaplaza', 'muebles']
+               'magazine', 'insenia', 'murciaplaza', 'muebles', 'lavanguardia',
+               'deloitte', 'elpais', 'unizar', 'diario', 'x.com', 'anuncios',
+               'wikipedia', '.mx', 'youtube', 'tripadvisor', 'mx.', 'infobae',
+               'uah', 'unitour', 'congresos', '.ar', 'mejoresestudiosinteriorismo',
+               'uco']
 
 def get_driver(debug):
     # The log disable with the option headless=new is not working
@@ -53,6 +60,27 @@ def get_driver(debug):
 
     return webdriver.Chrome(service=service, options=chrome_options)
 
+def build_payload(query, start=1, num=10, **params):
+    payload = {
+        'key': API_KEY,
+        'q': query,
+        'cx': SEARCH_ENGINE_ID,
+        'start': start,
+        'num': num,
+        'excludeTerms': ' '.join(FILTER_WORDS)
+    }
+
+    payload.update(params)
+    return payload
+
+def make_request(payload):
+    res = requests.get('https://www.googleapis.com/customsearch/v1/', params=payload)
+
+    if res.status_code != 200:
+        raise Exception('Request failed')
+    
+    return [url['link'] for url in res.json()['items']]
+
 def write_file(data, filename):
     with open(filename, 'a') as f:
         try:
@@ -60,7 +88,7 @@ def write_file(data, filename):
         except Exception as e:
             return e
 
-def scrape_web(url, debug = False, query = 'Debug'):
+def scrape_web(url, debug = False, query = 'debug'):
     # Get driver and sleep for full page load
     driver = get_driver(debug)
     driver.get(url)
@@ -107,7 +135,28 @@ def scrape_web(url, debug = False, query = 'Debug'):
                                      url, SEPARATOR, 
                                      email.lower()), NAME_FILE)
 
+def load_url(query, result_total=MAX_SEARCH):
+    items =[]
+    reminder = result_total % 10
+
+    if reminder > 0:
+        pages = (result_total // 10) + 1
+    else:
+        pages = result_total // 10
+
+    for i in tqdm(range(pages)):
+        if pages == i + 1 and reminder > 0:
+            payload = build_payload(query, start=(i+1)*10, num=reminder)
+        else:
+            payload = build_payload(query, start=(i+1)*10)
+
+        res = make_request(payload)
+        items.extend(res)
+
+    return items
+
 if __name__ == "__main__":
+
     # Enable multiprocessing in exe for Windows
     freeze_support()
 
@@ -124,17 +173,15 @@ if __name__ == "__main__":
         filter_list = FILTER_WORDS
 
     # Query to search in Google
-    query = input('Que quieres buscar, payaso? ')
+    #query = input('Que quieres buscar, payaso? ')
+    query = 'estudios arquitectura cordoba'
 
     try:
         # Google search and apply filters
         print('Buscando en Google...')
-        search_raw = [urls.url for urls in search(query, 
-                                                    num_results=MAX_SEARCH, 
-                                                    advanced=True,
-                                                    sleep_interval=5)]
+        search_raw = load_url(query)
         search_filter = [i for i in search_raw if not any(i for j in filter_list if str(j) in i)]
-        urls_list = set(['https://' + x.split('/')[2] for x in search_filter])
+        urls_list = set(search_filter)
     except Exception as e:
         print(e)
         input('Ha habido un error. Pulsa alguna tecla para salir.')
@@ -150,9 +197,10 @@ if __name__ == "__main__":
     if DEBUG:
         for url in urls_list:
             try:
-                scrape_web(url, DEBUG, query=query)
+                scrape_web(url, DEBUG)
                 pbar.update(n=1)
-            except:
+            except Exception as e:
+                print(e)
                 continue
     else:    
         # list to store the processes

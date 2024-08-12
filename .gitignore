@@ -16,3 +16,5 @@ output/*
 build/*
 dist/*
 *.spec
+*.txt
+*.csv
