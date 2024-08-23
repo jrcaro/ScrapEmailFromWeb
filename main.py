@@ -26,22 +26,10 @@ NAME_FILE = './/resultado.csv'
 # Regex pattern
 PATTERN = re.compile(r"[\w]+[.]?[-]?[\w]+@[\w]+[.]?[-]?[\w]+\.[\w]{2,6}")
 # Words to filter URLs
-FILTER_WORDS = ['paginasamarillas', 'nebrija', 'facebook', 'aq.upm', 'blog',
-               'influyentescantabria', 'tienda', 'univers', 'houzz',
-               'linkedin', 'infojobs','.edu', 'elconfidencial', 'comunidad.madrid',
-               'eleconomista', 'pinterest', 'abc.es', 'revista', 'instagram',
-               'twitter', 'idealista', 'emagister', 'uspceu', 'cei.es',
-               'proveedores.com', 'vogue', 'mitula', 'esda.es', 'cursosccc',
-               'esdmadrid.es', 'enfemenino', 'tumaster.com', 'master', 'ikea',
-               'localidades', '.info', 'heraldo', 'expansion', 'lavanguardia',
-               'foro', 'kavehome', 'elmundo', 'elpais', 'udit.es', 'lanocion.es',
-               'hola.com', 'college', 'provincia', 'artediez.es', 'empresa',
-               'timeout', 'uam.es', 'wikipedia', 'castellonplaza', 'logicalia.net',
-               'magazine', 'insenia', 'murciaplaza', 'muebles', 'lavanguardia',
-               'deloitte', 'elpais', 'unizar', 'diario', 'x.com', 'anuncios',
-               'wikipedia', '.mx', 'youtube', 'tripadvisor', 'mx.', 'infobae',
-               'uah', 'unitour', 'congresos', '.ar', 'mejoresestudiosinteriorismo',
-               'uco']
+with open('filter.txt', 'r') as f:
+    FILTER_WORDS_ = f.readlines()
+
+FILTER_WORDS = list(map(lambda x: x.replace('\n', ''), FILTER_WORDS_))
 
 def get_driver(debug):
     # The log disable with the option headless=new is not working
