@@ -161,8 +161,8 @@ if __name__ == "__main__":
         filter_list = FILTER_WORDS
 
     # Query to search in Google
-    #query = input('Que quieres buscar, payaso? ')
-    query = 'estudios arquitectura cordoba'
+    query = input('Que quieres buscar, payaso? ')
+    #query = 'estudios arquitectura cordoba'
 
     try:
         # Google search and apply filters
