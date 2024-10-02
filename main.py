@@ -138,8 +138,12 @@ def load_url(query, result_total=MAX_SEARCH):
         else:
             payload = build_payload(query, start=(i+1)*10)
 
-        res = make_request(payload)
-        items.extend(res)
+        try:
+            res = make_request(payload)
+            items.extend(res)
+        except Exception as e:
+            print('No existen más páginas. Tiramos con las que hay.')
+            continue
 
     return items
 
