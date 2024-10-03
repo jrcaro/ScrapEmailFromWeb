@@ -143,7 +143,7 @@ def load_url(query, result_total=MAX_SEARCH):
             items.extend(res)
         except Exception as e:
             print('No existen más páginas. Tiramos con las que hay.')
-            continue
+            break
 
     return items
 
